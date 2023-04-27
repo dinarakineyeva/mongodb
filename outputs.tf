@@ -1,4 +1,3 @@
-# The connection strings available for the GCP MognoDB Atlas cluster
-output "connection_string" {
-  value = mongodbatlas_cluster.cluster.connection_strings
+output "user1" {
+  value = mongodbatlas_database_user.user.username
 }
