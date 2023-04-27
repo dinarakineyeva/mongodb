@@ -1,94 +1,50 @@
+variable "project_id_mongo" {}
 
+variable "gcp_project" {}
 
-###-----------------------------------------------------------------------------
-### general config
-###-----------------------------------------------------------------------------
+variable "network_name" {}
 
-variable "project_name" {
+variable "cloud_provider" {
   type        = string
-  description = "the base name to use when creating resources. a randomized suffix will be added."
-  default     = "gcp-demo"
+  description = "The cloud provider to use, must be AWS, GCP or AZURE"
+}
+variable "cluster_name" {
+  type        = string
+  description = "The MongoDB Atlas Cluster Name"
+}
+variable "mongodbversion" {
+  type        = string
+  description = "The Major MongoDB Version"
 }
 
-
-###-----------------------------------------------------------------------------
-### Google Cloud
-###-----------------------------------------------------------------------------
-
-# variable "google_billing_account" {
-#   type        = string
-#   description = "the ID of your Google Cloud billing account"
-# }
-
-
-###-----------------------------------------------------------------------------
-### region config
-###-----------------------------------------------------------------------------
-
-# Please refer to https://www.mongodb.com/docs/atlas/reference/google-gcp/#std-label-google-gcp
-# for a mapping of Atlas region names to Google Cloud region names. In most cases
-# you should use the same region for both services.
-
-variable "google_cloud_region" {
+variable "cluster_type" {}
+variable "cloud_backup" {}
+variable "auto_scaling_disk_gb_enabled" {}
+variable "provider_instance_size_name" {}
+variable "num_shards" {}
+variable "region_name" {}
+variable "electable_nodes" {}
+variable "priority" {}
+variable "read_only_nodes" {}
+variable "db_username" {
   type        = string
-  description = "the Google Cloud region in which to create resources"
-  default     = "us-central1"
+  description = "MongoDB Atlas Database User Name"
 }
-
-variable "atlas_cluster_region" {
+variable "db_password" {
   type        = string
-  description = "the Atlas region in which to create the database cluster"
-  default     = "CENTRAL_US"
+  description = "MongoDB Atlas Database User Password"
 }
-
-
-
-
-
-###-----------------------------------------------------------------------------
-### MongoDB Atlas
-###-----------------------------------------------------------------------------
-
-variable "atlas_cluster_tier" {
+variable "auth_database_name" {
   type        = string
-  description = "the tier of cluster you want to create. see the Atlas docs for details."
-  default     = "M10" # M0 is the free tier
+  description = "The database in the cluster to limit the database user to, the database does not have to exist yet"
 }
-
-variable "atlas_org_id" {
-  type        = string
-  description = "the ID of your MongoDB Atlas organization"
-  default = "642adea619316a2bfd69f142"
-}
-
-variable "atlas_pub_key" {
-  type        = string
-  description = "public key for MongoDB Atlas"
-  default = "ghmdvpkc"
-}
-
-variable "atlas_priv_key" {
-  type        = string
-  description = "private key for MongoDB Atlas"
-  default = "54f705ae-5b9c-45ce-80bf-f5d323348cc1"
-}
-
-###-----------------------------------------------------------------------------
-### MongoDB database
-###-----------------------------------------------------------------------------
-
-variable "db_name" {
-  type        = string
-  description = "the name of the database to configure"
-  default     = "meanStackExample"
-}
-
-variable "db_user" {
-  type        = string
-  description = "the username used to connect to the mongodb cluster"
-  default     = "mongo"
-}
-
-
-
-
+variable "db_role_name" {}
+variable "database_name" {}
+variable "db_key" {}
+variable "db_value" {}
+# variable "mongodb_cidr_block" {}
+# variable "comment" {}
+variable "gcp_region" {}
+variable "subnet_name" {}
+variable "google_compute_address_type" {}
+variable "google_compute_address" {}
