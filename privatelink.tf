@@ -7,13 +7,13 @@ resource "mongodbatlas_privatelink_endpoint" "mongoatlas_primary" {
 
 # Create Google 10 Addresses
 resource "google_compute_address" "compute_address" {
-  count        = 10
+  count        = 50
   project      = var.gcp_project
   name         = "test-mongo-${count.index}"
   subnetwork   = var.subnet_name
   address_type = var.google_compute_address_type
-  address      = "${var.google_compute_address}${count.index + 5}"
-  # address      = "10.1.4.${count.index}"
+  # address      = "${var.google_compute_address}${count.index + 5}"
+  address      = "10.128.0.${count.index + 3}"
   region = var.gcp_region
 
   depends_on = [mongodbatlas_privatelink_endpoint.mongoatlas_primary]
@@ -21,7 +21,7 @@ resource "google_compute_address" "compute_address" {
 
 # Create 10 Forwarding rules
 resource "google_compute_forwarding_rule" "compute_forwarding_rule" {
-  count                 = 10
+  count                 = 50
   project               = var.gcp_project
   region                = var.gcp_region
   name                  = "test-mongo${count.index}"
@@ -49,3 +49,4 @@ resource "mongodbatlas_privatelink_endpoint_service" "test" {
 
   depends_on = [google_compute_forwarding_rule.compute_forwarding_rule]
 }
+
