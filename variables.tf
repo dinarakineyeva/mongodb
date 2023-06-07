@@ -62,25 +62,36 @@ variable "num_shards" {
   description = "(Required) Number of shards to deploy in the specified zone, minimum 1"
 }
 
-variable "region_name" {
-  type        = string
-  description = "(Optional) Physical location of your MongoDB cluster. The region you choose can affect network latency for clients accessing your databases. Requires the Atlas region name, see the reference list for AWS, GCP, Azure."
+variable "regions_config" {
+  type = list(object({
+    region_name     = string
+    electable_nodes = number
+    priority        = number
+    read_only_nodes = number
+  }))
+  default = [
+    {
+      region_name  = "CENTRAL_US"
+      electable_nodes       = 3
+      priority              = 7
+      read_only_nodes       = 0
+    },
+    {
+      region_name     = "EASTERN_US"
+      electable_nodes = 2
+      priority        = 6
+      read_only_nodes = 0
+    },
+    {
+      region_name     = "WESTERN_US"
+      electable_nodes = 2
+      priority        = 5
+      read_only_nodes = 2
+    }
+  ]
 }
 
-variable "electable_nodes" {
-  type      = number
-  description = "(Optional) Number of electable nodes for Atlas to deploy to the region. Electable nodes can become the primary and can facilitate local reads."
-}
 
-variable "priority" {
-  type        = number  
-  description = " (Optional) Election priority of the region. For regions with only read-only nodes, set this value to 0."
-}
-
-variable "read_only_nodes" {
-  type        = number
-  description = "(Optional) Number of read-only nodes for Atlas to deploy to the region. Read-only nodes can never become the primary, but can facilitate local-reads. Specify 0 if you do not want any read-only nodes in the region."
-}
 
 variable "mongodb_enabled" {
   description = "value"
