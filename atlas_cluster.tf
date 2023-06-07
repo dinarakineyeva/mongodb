@@ -10,11 +10,14 @@ resource "mongodbatlas_cluster" "cluster" {
   cluster_type           = var.cluster_type
   replication_specs {
     num_shards = var.num_shards
-    regions_config {
-      region_name     = var.region_name
-      electable_nodes = var.electable_nodes
-      priority        = var.priority
-      read_only_nodes = var.read_only_nodes
+    dynamic "regions_config" {
+      for_each = var.regions_config
+      content {
+        region_name           = lookup(regions_config.value, "region_name",  "CENTRAL_US")  
+        electable_nodes       = lookup(regions_config.value, "electable_nodes",  3)
+        priority              = lookup(regions_config.value, "priority",  7)
+        read_only_nodes       = lookup(regions_config.value, "read_only_nodes",  0)
+    }
     }
   }
   
@@ -29,7 +32,7 @@ resource "mongodbatlas_cluster" "cluster" {
     content {
       javascript_enabled                   = lookup(advanced_configuration.value, "javascript_enabled",  true) 
       minimum_enabled_tls_protocol         = lookup(advanced_configuration.value, "minimum_enabled_tls_protocol", null) #"TLS1_2"
-      oplog_min_retention_hours        = lookup(advanced_configuration.value, "oplog_min_retention_hours", 24)
+      oplog_min_retention_hours            = lookup(advanced_configuration.value, "oplog_min_retention_hours", 24)
     }
  }
 }
