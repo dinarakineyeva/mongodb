@@ -4,22 +4,20 @@ variable "project_id_mongo" {
 }
 
 variable "cloud_provider" {
-type = string
-description = "The cloud provider to use. This variable is used to specify the cloud provider for the MongoDB Atlas cluster. Valid values are AWS, GCP, or AZURE."
+  type        = string
+  description = "The cloud provider to use. This variable is used to specify the cloud provider for the MongoDB Atlas cluster. Valid values are AWS, GCP, or AZURE."
 }
-
 variable "cluster_name" {
-  type = string
-  description = "The name of the MongoDB Atlas cluster. This variable is used to specify the name of the MongoDB Atlas cluster."
+  default = []
 }
 
 variable "mongodbversion" {
-  type = string
+  type        = string
   description = "(Optional) Version of the cluster to deploy. Atlas supports the following MongoDB versions for M10+ clusters: 4.2, 4.4, 5.0, or 6.0. If omitted, Atlas deploys a cluster that runs MongoDB 5.0. If provider_instance_size_name: M0, M2 or M5, Atlas deploys MongoDB 5.0. Atlas always deploys the cluster with the latest stable release of the specified version."
 }
 
 variable "termination_protection_enabled" {
-  type = bool  
+  type        = bool
   description = "Indicates whether termination protection is enabled for the cluster. This variable is used to enable or disable termination protection for the MongoDB Atlas cluster."
 }
 
@@ -29,7 +27,7 @@ variable "cluster_type" {
 }
 
 variable "cloud_backup" {
-  type        = bool   
+  type        = bool
   description = "(Optional) Flag indicating if the cluster uses Cloud Backup for backups.If true, the cluster uses Cloud Backup for backups. If cloud_backup and backup_enabled are false, the cluster does not use Atlas backups."
 }
 
@@ -45,16 +43,16 @@ variable "provider_instance_size_name" {
 
 variable "advanced_configuration" {
   description = "Advanced configuration options for the MongoDB Atlas cluster. This variable is used to specify advanced configuration options as an object. 'Javascript_enabled' - (Optional) When true, the cluster allows execution of operations that perform server-side executions of JavaScript. When false, the cluster disables execution of those operations. 'minimum_enabled_tls_protocol' - (Optional) Sets the minimum Transport Layer Security (TLS) version the cluster accepts for incoming connections."
-    type = object({
-    javascript_enabled = bool
+  type = object({
+    javascript_enabled           = bool
     minimum_enabled_tls_protocol = string
-    oplog_min_retention_hours = number
-    })
-    default = {
-    javascript_enabled = true
+    oplog_min_retention_hours    = number
+  })
+  default = {
+    javascript_enabled           = true
     minimum_enabled_tls_protocol = "TLS1_2"
-    oplog_min_retention_hours = 24
-    }
+    oplog_min_retention_hours    = 24
+  }
 }
 
 variable "num_shards" {
@@ -69,34 +67,15 @@ variable "regions_config" {
     priority        = number
     read_only_nodes = number
   }))
-  default = [
-    {
-      region_name  = "CENTRAL_US"
-      electable_nodes       = 3
-      priority              = 7
-      read_only_nodes       = 0
-    },
-    {
-      region_name     = "EASTERN_US"
-      electable_nodes = 2
-      priority        = 6
-      read_only_nodes = 0
-    },
-    {
-      region_name     = "WESTERN_US"
-      electable_nodes = 2
-      priority        = 5
-      read_only_nodes = 2
-    }
-  ]
+  default = []
 }
 
 
 
 variable "mongodb_enabled" {
   description = "value"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 #==================Google Cloud Platform Variables====================#
@@ -150,7 +129,7 @@ variable "auth_database_name" {
 }
 
 variable "db_role_name" {
-  type        = string   
+  type        = string
   description = "(Required) Name of the role to grant. "
 }
 variable "database_name" {
@@ -159,10 +138,20 @@ variable "database_name" {
 }
 
 variable "db_key" {
-  type        = string 
+  type        = string
   description = "Containing key-value pairs that tag and categorize the database user. Each key and value has a maximum length of 255 characters.The key that you want to write."
 }
 variable "db_value" {
   type        = string
   description = "Containing key-value pairs that tag and categorize the database user. Each key and value has a maximum length of 255 characters.The value that you want to write."
+}
+
+variable "description" {
+  type = string
+  description = "(Required) Description of the on-demand snapshot."
+}
+
+variable "retention_in_days" {
+  type = number
+  description = " (Required) The number of days that Atlas should retain the on-demand snapshot. Must be at least 1."
 }
