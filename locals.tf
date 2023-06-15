@@ -12,8 +12,8 @@ locals {
     "read", "readWrite", "dbAdmin"
   ]
 
-  mongodb_rw_username = "${local.mongodb_database_name}_rw"
-  mongodb_rw_password = random_password.database-rw-password.result
+  mongodb_rw_username    = "${local.mongodb_database_name}_rw"
+  mongodb_rw_password    = random_password.database-rw-password.result
   mongodb_admin_username = "${local.mongodb_database_name}_admin"
   mongodb_admin_password = random_password.database-admin-password.result
 
