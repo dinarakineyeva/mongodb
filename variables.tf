@@ -1,8 +1,12 @@
 #=======================Mongo Atlas Variables=========================#
-variable "project_id_mongo" {
-  description = "The project ID for MongoDB Atlas. This variable is used to specify the project ID of the MongoDB Atlas project."
+variable "org_id" {
+  type        = string
+  description = "MongoDB Organization ID"
 }
-
+variable "project_name" {
+  type        = string
+  description = "The MongoDB Atlas Project Name"
+}
 variable "cloud_provider" {
   type        = string
   description = "The cloud provider to use. This variable is used to specify the cloud provider for the MongoDB Atlas cluster. Valid values are AWS, GCP, or AZURE."
@@ -100,10 +104,8 @@ variable "gcp_region" {
   description = " (Required) Cloud provider region in which you want to create the private endpoint connection. Accepted values are: AWS regions, AZURE regions and GCP regions"
 }
 
-variable "network_name" {
-  description = "value"
-}
-variable "subnet_name" {
+variable "environment" {
+  type        = string
   description = "value"
 }
 
@@ -147,11 +149,13 @@ variable "db_value" {
 }
 
 variable "description" {
-  type = string
+  type        = string
   description = "(Required) Description of the on-demand snapshot."
 }
 
 variable "retention_in_days" {
-  type = number
+  type        = number
   description = " (Required) The number of days that Atlas should retain the on-demand snapshot. Must be at least 1."
 }
+
+
