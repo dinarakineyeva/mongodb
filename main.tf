@@ -1,11 +1,15 @@
 #######################
 #   Atlas Cluster     #
 #######################
+resource "mongodbatlas_project" "project" {
+  name   = "${var.environment}${var.project_name}"
+  org_id = var.org_id
+}
 
 resource "mongodbatlas_cluster" "cluster" {
-  count =  length(var.cluster_name)
-  project_id = mongodbatlas_privatelink_endpoint_service.test.project_id
-  name                   = var.cluster_name[count.index]
+  count                  = length(var.cluster_name)
+  project_id             = mongodbatlas_privatelink_endpoint_service.test.project_id
+  name                   = "${local.cluster_name}-${var.cluster_name[count.index]}"
   mongo_db_major_version = var.mongodbversion
   cluster_type           = var.cluster_type
   replication_specs {
@@ -13,52 +17,52 @@ resource "mongodbatlas_cluster" "cluster" {
     dynamic "regions_config" {
       for_each = var.regions_config
       content {
-        region_name           = lookup(regions_config.value, "region_name",  "CENTRAL_US")  
-        electable_nodes       = lookup(regions_config.value, "electable_nodes",  3)
-        priority              = lookup(regions_config.value, "priority",  7)
-        read_only_nodes       = lookup(regions_config.value, "read_only_nodes",  0)
-    }
+        region_name     = lookup(regions_config.value, "region_name", "CENTRAL_US")
+        electable_nodes = lookup(regions_config.value, "electable_nodes", 3)
+        priority        = lookup(regions_config.value, "priority", 7)
+        read_only_nodes = lookup(regions_config.value, "read_only_nodes", 0)
+      }
     }
   }
-  
+
   # Provider Settings "block"
-  cloud_backup                 = var.cloud_backup
-  auto_scaling_disk_gb_enabled = var.auto_scaling_disk_gb_enabled
-  provider_name                = var.cloud_provider
-  provider_instance_size_name  = var.provider_instance_size_name
+  cloud_backup                   = var.cloud_backup
+  auto_scaling_disk_gb_enabled   = var.auto_scaling_disk_gb_enabled
+  provider_name                  = var.cloud_provider
+  provider_instance_size_name    = var.provider_instance_size_name
   termination_protection_enabled = var.termination_protection_enabled
   dynamic "advanced_configuration" {
     for_each = [var.advanced_configuration]
     content {
-      javascript_enabled                   = lookup(advanced_configuration.value, "javascript_enabled",  true) 
-      minimum_enabled_tls_protocol         = lookup(advanced_configuration.value, "minimum_enabled_tls_protocol", null) #"TLS1_2"
-      oplog_min_retention_hours            = lookup(advanced_configuration.value, "oplog_min_retention_hours", 24)
+      javascript_enabled           = lookup(advanced_configuration.value, "javascript_enabled", true)
+      minimum_enabled_tls_protocol = lookup(advanced_configuration.value, "minimum_enabled_tls_protocol", null) #"TLS1_2"
+      oplog_min_retention_hours    = lookup(advanced_configuration.value, "oplog_min_retention_hours", 24)
     }
- }
+  }
 }
 
 # ===== Service Account for KMS ===== #
 resource "google_service_account" "encryption_at_rest" {
-  project       = var.gcp_project
-  account_id    = substr("atlas-encrypt-sa-${mongodbatlas_cluster.cluster.0.name}", 0, 25)
-  display_name  = "atlas-clutut" #"atlas-encrypt-${var.cluster_name}"
+  project      = var.gcp_project
+  account_id   = substr("atlas-encrypt-sa-${mongodbatlas_cluster.cluster.0.name}", 0, 25)
+  display_name = "atlas-encrypt-${var.environment}"
 }
 
 resource "google_project_iam_member" "encryption_at_rest" {
-  for_each  = toset([
+  for_each = toset([
     "roles/cloudkms.admin",
     "roles/cloudkms.cryptoKeyEncrypterDecrypter",
     "roles/owner",
   ])
-  project   = var.gcp_project
-  role      = each.value
-  member    = "serviceAccount:atlas-encrypt-sar@${var.gcp_project}.iam.gserviceaccount.com"
+  project = var.gcp_project
+  role    = each.value
+  member  = "serviceAccount:atlas-encrypt-sar@${var.gcp_project}.iam.gserviceaccount.com"
 }
 
 # ====== Create service account key ===== #
 resource "google_service_account_key" "encryption_at_rest" {
   service_account_id = "atlas-encrypt-sar@${var.gcp_project}.iam.gserviceaccount.com"
-  public_key_type     = "TYPE_X509_PEM_FILE"
+  public_key_type    = "TYPE_X509_PEM_FILE"
 
 }
 
@@ -68,21 +72,21 @@ resource "google_service_account_key" "encryption_at_rest" {
 
 # ===== Create keyring for encryption_at_rest ===== #
 resource "google_kms_key_ring" "encryption_at_rest" {
-  project   = var.gcp_project
-  name      = "atlas-keyring-${random_id.rng.hex}"
-  location  = "global"
+  project  = var.gcp_project
+  name     = "atlas-keyring-${random_id.rng.hex}"
+  location = "global"
 }
 
 resource "google_kms_crypto_key" "crypto_key" {
-  name      = "atlas-crypto-key-${random_id.rng.hex}"
-  key_ring  = google_kms_key_ring.encryption_at_rest.id
-  
+  name     = "atlas-crypto-key-${random_id.rng.hex}"
+  key_ring = google_kms_key_ring.encryption_at_rest.id
+
   depends_on = [google_kms_key_ring.encryption_at_rest]
 }
 
 # ===== Atlas encryption_at_rest ===== #
 resource "mongodbatlas_encryption_at_rest" "kms" {
-  project_id                = var.project_id_mongo
+  project_id = mongodbatlas_project.project.id
   google_cloud_kms_config {
     enabled                 = true
     service_account_key     = base64decode(google_service_account_key.encryption_at_rest.private_key)
@@ -94,7 +98,7 @@ resource "mongodbatlas_encryption_at_rest" "kms" {
 
 # ==== On Mongo Cloud(organization) ->Access Manager -> APÌ Keys -> Private Key & Access List (add the ip of the machine which runs terraform commands) ==== #
 resource "mongodbatlas_cloud_backup_schedule" "test" {
-  count                    = var.mongodb_enabled ? 1 : 0
+  count        = var.mongodb_enabled ? 1 : 0
   project_id   = mongodbatlas_cluster.cluster.0.project_id
   cluster_name = mongodbatlas_cluster.cluster.0.name
 
@@ -105,24 +109,24 @@ resource "mongodbatlas_cloud_backup_schedule" "test" {
 
   // This will now add the desired policy items to the existing mongodbatlas_cloud_backup_schedule resource
   policy_item_daily {
-    frequency_interval = 1        #accepted values = 1 -> every 1 day
+    frequency_interval = 1 #accepted values = 1 -> every 1 day
     retention_unit     = "days"
     retention_value    = 2
   }
   policy_item_weekly {
-    frequency_interval = 4        # accepted values = 1 to 7 -> every 1=Monday,2=Tuesday,3=Wednesday,4=Thursday,5=Friday,6=Saturday,7=Sunday day of the week
+    frequency_interval = 4 # accepted values = 1 to 7 -> every 1=Monday,2=Tuesday,3=Wednesday,4=Thursday,5=Friday,6=Saturday,7=Sunday day of the week
     retention_unit     = "weeks"
     retention_value    = 3
   }
-  
+
   depends_on = [mongodbatlas_cluster.cluster]
 }
 
 resource "mongodbatlas_cloud_backup_snapshot" "test" {
-    project_id        = mongodbatlas_cluster.cluster.0.project_id
-    cluster_name      = mongodbatlas_cluster.cluster.0.name
-    description       = var.description
-    retention_in_days = var.retention_in_days
+  project_id        = mongodbatlas_cluster.cluster.0.project_id
+  cluster_name      = mongodbatlas_cluster.cluster.0.name
+  description       = var.description
+  retention_in_days = var.retention_in_days
 }
 
 
@@ -130,7 +134,7 @@ resource "mongodbatlas_cloud_backup_snapshot" "test" {
 #  privatelink endpoint  #
 ##########################
 resource "mongodbatlas_privatelink_endpoint" "mongoatlas_primary" {
-  project_id    = var.project_id_mongo
+  project_id    = mongodbatlas_project.project.id
   provider_name = "GCP"
   region        = var.gcp_region
   # depends_on = [ mongodbatlas_cluster.cluster ]
@@ -139,13 +143,13 @@ resource "mongodbatlas_privatelink_endpoint" "mongoatlas_primary" {
 # ===== Create a Google Network ===== #
 resource "google_compute_network" "default" {
   project = var.gcp_project
-  name    = var.network_name
+  name    = "${var.environment}-network"
 }
 
 # ==== Create a Google Sub Network ===== #
 resource "google_compute_subnetwork" "default" {
   project       = google_compute_network.default.project
-  name          = var.subnet_name
+  name          = "${var.environment}-subnet"
   ip_cidr_range = "10.0.0.0/16"
   region        = var.gcp_region
   network       = google_compute_network.default.id
@@ -160,8 +164,7 @@ resource "google_compute_address" "compute_address" {
   subnetwork   = google_compute_subnetwork.default.id
   address_type = var.google_compute_address_type
   address      = "${var.google_compute_address}${count.index}"
-  # address = "10.0.42.${count.index}"
-  region = google_compute_subnetwork.default.region
+  region       = google_compute_subnetwork.default.region
 
   depends_on = [mongodbatlas_privatelink_endpoint.mongoatlas_primary]
 }
@@ -201,7 +204,7 @@ resource "mongodbatlas_privatelink_endpoint_service" "test" {
 resource "mongodbatlas_database_user" "user" {
   username           = var.db_username
   password           = var.db_password
-  project_id         = var.project_id_mongo
+  project_id         = mongodbatlas_project.project.id
   auth_database_name = var.auth_database_name
 
   roles {
@@ -215,8 +218,24 @@ resource "mongodbatlas_database_user" "user" {
 }
 
 # ===== custom roles ==== #
+resource "mongodbatlas_custom_db_role" "database-ro-role" {
+  project_id = mongodbatlas_project.project.id
+  role_name  = "${local.mongodb_database_name}_rw"
+
+  dynamic "actions" {
+    for_each = local.mongodb_ro_role_actions
+    content {
+      action = actions.value
+      resources {
+        collection_name = ""
+        database_name   = local.mongodb_database_name
+      }
+    }
+  }
+}
+
 resource "mongodbatlas_custom_db_role" "database-rw-role" {
-  project_id = var.project_id_mongo
+  project_id = mongodbatlas_project.project.id
   role_name  = "${local.mongodb_database_name}_rw"
 
   dynamic "actions" {
@@ -232,7 +251,7 @@ resource "mongodbatlas_custom_db_role" "database-rw-role" {
 }
 
 resource "mongodbatlas_custom_db_role" "database-admin-role" {
-  project_id = var.project_id_mongo
+  project_id = mongodbatlas_project.project.id
   role_name  = "${local.mongodb_database_name}_admin"
 
   dynamic "actions" {
@@ -255,10 +274,22 @@ resource "mongodbatlas_custom_db_role" "database-admin-role" {
   }
 }
 
+# ==== database read-only user ==== #
+resource "mongodbatlas_database_user" "database-ro-user" {
+  project_id         = mongodbatlas_project.project.id
+  auth_database_name = var.auth_database_name
+  username           = local.mongodb_ro_username
+  password           = local.mongodb_ro_password
+
+  roles {
+    role_name     = mongodbatlas_custom_db_role.database-ro-role.role_name
+    database_name = var.database_name
+  }
+}
 
 # ==== database read-write user ==== #
 resource "mongodbatlas_database_user" "database-rw-user" {
-  project_id         = var.project_id_mongo
+  project_id         = mongodbatlas_project.project.id
   auth_database_name = var.auth_database_name
   username           = local.mongodb_rw_username
   password           = local.mongodb_rw_password
@@ -271,7 +302,7 @@ resource "mongodbatlas_database_user" "database-rw-user" {
 
 # ===== database admin user ===== #
 resource "mongodbatlas_database_user" "database-admin-user" {
-  project_id         = var.project_id_mongo
+  project_id         = mongodbatlas_project.project.id
   auth_database_name = var.auth_database_name
   username           = local.mongodb_admin_username
   password           = local.mongodb_admin_password
@@ -282,21 +313,21 @@ resource "mongodbatlas_database_user" "database-admin-user" {
   }
 }
 
-resource "random_password" "database-rw-password" {
+resource "random_password" "database-password" {
   length           = 16
   special          = true
   override_special = "_%@"
 }
 
-resource "random_password" "database-admin-password" {
-  length           = 16
-  special          = true
-  override_special = "_%@"
-}
+# resource "random_password" "database-admin-password" {
+#   length           = 16
+#   special          = true
+#   override_special = "_%@"
+# }
 
 resource "random_id" "rng" {
   keepers = {
     first = "${timestamp()}"
-  }     
+  }
   byte_length = 8
 }
