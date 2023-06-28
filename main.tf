@@ -2,7 +2,7 @@
 #   Atlas Cluster     #
 #######################
 resource "mongodbatlas_project" "project" {
-  name   = "${var.environment}${var.project_name}"
+  name   = "${var.environment}-${var.project_name}"
   org_id = var.org_id
 }
 
@@ -44,7 +44,7 @@ resource "mongodbatlas_cluster" "cluster" {
 # ===== Service Account for KMS ===== #
 resource "google_service_account" "encryption_at_rest" {
   project      = var.gcp_project
-  account_id   = substr("atlas-encrypt-sa-${mongodbatlas_cluster.cluster.0.name}", 0, 25)
+  account_id   = "atlas-encrypt-mongo-${var.environment}"
   display_name = "atlas-encrypt-${var.environment}"
 }
 
@@ -56,12 +56,12 @@ resource "google_project_iam_member" "encryption_at_rest" {
   ])
   project = var.gcp_project
   role    = each.value
-  member  = "serviceAccount:atlas-encrypt-sar@${var.gcp_project}.iam.gserviceaccount.com"
+  member  = "serviceAccount:atlas-encrypt-mongo-${var.environment}@${var.gcp_project}.iam.gserviceaccount.com"
 }
 
 # ====== Create service account key ===== #
 resource "google_service_account_key" "encryption_at_rest" {
-  service_account_id = "atlas-encrypt-sar@${var.gcp_project}.iam.gserviceaccount.com"
+  service_account_id = "atlas-encrypt-mongo-${var.environment}@${var.gcp_project}.iam.gserviceaccount.com"
   public_key_type    = "TYPE_X509_PEM_FILE"
 
 }
@@ -236,7 +236,7 @@ resource "mongodbatlas_custom_db_role" "database-ro-role" {
 
 resource "mongodbatlas_custom_db_role" "database-rw-role" {
   project_id = mongodbatlas_project.project.id
-  role_name  = "${local.mongodb_database_name}_rw"
+  role_name  = "${local.mongodb_database_name}_rw_role"
 
   dynamic "actions" {
     for_each = local.mongodb_rw_role_actions
