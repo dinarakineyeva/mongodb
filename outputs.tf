@@ -2,15 +2,22 @@ output "user1" {
   value = mongodbatlas_database_user.user.username
 }
 
-output "database-rw-user" {
+output "database_ro_username" {
+  value = mongodbatlas_database_user.database-ro-user.username
+}
+
+output "database_rw_username" {
   value = mongodbatlas_database_user.database-rw-user.username
 }
 
-output "database-admin-user" {
+output "database_admin_username" {
   value = mongodbatlas_database_user.database-admin-user.username
 }
 
+output "cluster_connection_strings" {
+  value = mongodbatlas_cluster.cluster[*].connection_strings
+}
 
-output "connection_string" {
-  value = length(local.connection_strings) > 0 ? local.connection_strings[0] : ""
+output "mongo_project_id" {
+  value = mongodbatlas_project.project.id
 }
